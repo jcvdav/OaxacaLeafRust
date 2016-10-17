@@ -1,0 +1,59 @@
+---
+title: "Maps1"
+author: "Villasenor-Derbez, J.C."
+date: "12 de octubre de 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+```
+
+```{r load packages}
+
+suppressPackageStartupMessages({
+  library(rgdal)
+  library(ggplot2)
+  library(maptools)
+  library(sp)
+  library(dplyr)
+  library(tidyr)
+})
+
+```
+
+```{r load spatial}
+
+dir = "./Data/Spatial"
+
+stat <- readOGR(dsn = dir, layer = "states")
+stat <- stat[stat$NAME == "Oaxaca",]
+
+muni <- readOGR(dsn = dir, layer = "Municipios__2000")
+muni <- muni[muni$NOM_ENT == "Oaxaca",]
+  
+
+load("./Data/meanT.RData")
+
+oax <- merge(fortify(stat), stat@data, by = intersect(names(stat), names(stat@data)))
+
+oax_muni <- merge(fortify(muni), muni@data, by = intersect(names(muni), names(muni@data)))
+
+temp <- group_by(temp, station) %>%
+  summarize(latitude = mean(latitude, na.rm = T),
+            longitude = mean(longitude, na.rm = T),
+            maxYear = max(year),
+            minYear =min(year))
+
+```
+
+```{r}
+
+ggplot(data = oax, aes(x = long, y = lat)) +
+  geom_polygon(aes(fill = NAME), alpha = 0.5, col = "black                                         ") +
+  geom_point(data = temp, aes(x = longitude, y = latitude)) +
+  theme_bw()
+
+```
+
+

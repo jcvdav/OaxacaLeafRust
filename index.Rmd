@@ -1,0 +1,189 @@
+---
+title: "index"
+author: "Villasenor-Derbez, J.C."
+date: "14 de octubre de 2016"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+```{r}
+
+suppressPackageStartupMessages({
+  library(DT)
+  library(tidyr)
+  library(dplyr)
+  library(rgdal)
+  library(ggplot2)
+  library(maptools)
+  library(sp)
+  library(plotly)
+})
+
+```
+
+```{r spatial}
+
+dir = "./Data/Spatial"
+
+stat <- readOGR(dsn = dir, layer = "states")
+stat <- stat[stat$NAME == "Oaxaca",]
+oax <- merge(fortify(stat), stat@data, by = intersect(names(fortify(stat)), names(stat@data)))
+
+## muni <- readOGR(dsn = dir, layer = "Municipios__2000")
+## muni <- muni[muni$NOM_ENT == "Oaxaca",]
+## oax_muni <- merge(fortify(muni), muni@data, by = intersect(names(fortify(muni)), names(muni@data)))
+
+```
+
+# Intro
+
+This is an Rmarkdown document, a document generated through RStudio. All information presented in this document will update automatically as data is gathered in the next weeks. There is one section for each deliverable, including a brief description of what exists so far, the links to the online repositories where I have stored the files, a map representing the spatial distribution of each dataset, and a `datatable` that shows a summary of each database.
+
+The databases have been stored in an online **private repository** in GitHub. They can be accessed [here](https://github.com/jcvdav/OaxacaLeafRust). The repository also contains all the `R` and `MatLab`code used to clean and join databases. To the extent possible, files will be available in `*.csv`, `*.RData`, and `*.mat` formats.
+
+# Climate data (deliverable 1)
+
+```{r}
+load("./Data/inifap_data.RData")
+```
+
+This contains daily data for climatic variables. So far, there are a total of `r length(unique(inifap_data$Nombre))` stations with data that covers some point between `r max(inifap_data$Fecha)` and `r max(inifap_data$Fecha)`.
+
+## Source
+
+Data comes from INIFAP's [website](http://clima.inifap.gob.mx/redinifap/est.aspx?est=38213), where one can search by station, year, and month.
+
+## % of advance
+
+About 75 percent of the data has been downloaded. All downloaded data has been cleaned, formated, and unified into a single file.
+
+## Link to GitHub
+
+The files can be accessed here as:
+
+    - [*.csv]()
+    - [*.RData]()
+
+## Spatial distribution of data
+
+Hover over a point to see more information about the station.
+
+```{r}
+
+data2 <- group_by(inifap_data, Nombre, Latitud, Longitud) %>%
+  summarize(Records = n(),
+            Init = min(Fecha),
+            Last = max(Fecha))
+
+ggplotly(ggplot(data = oax, aes(x = long, y = lat)) +
+  geom_polygon(alpha = 0.5, col = "black") +
+  geom_point(data = data2, aes(x = Longitud, y = Latitud, Init = Init, Last = Last, Records = Records)) +
+  theme_bw())
+
+```
+
+## Summary of data
+
+Here, Records indicates the number of records per station. Init and Last indicate first and last dates where data was recorded.
+
+```{r}
+
+datatable(data2, rownames = F)
+
+```
+
+# Leaf rust data (deliverable 2)
+
+## Source
+
+## % of advance
+
+All available data from the weekly reports has been downloaded and formated. Additional work could include joining it with spatial data to generate ESRI shapefiles.
+
+## Link to GitHub
+
+The files can be accessed here as:
+
+    - [*.csv]()
+    - [*.RData]()
+
+## Spatial distribution
+
+## Summary of data
+
+# Other climate data (deliverable 3)
+
+```{r}
+load("./Data/meanT.RData")
+```
+
+This contains daily data for climatic variables. So far, there are a total of `r length(unique(temp$station))` stations with data that covers some point between 2000 and `r max(temp$year)`. The oldest station has data from as far back as `r min(temp$year)`.
+
+## Source
+
+This data comes from [CLICOM's database](clicom-mex.cicese.mx). It has been manually downloaded, as I am waiting for a response to the letter we sent. However, I could still download data if needed (public access).
+
+## % of advance
+
+All available information for mean temperature has been downloaded. Information for min and max temperature, precipitation, and evaporation is yet to be downloaded. Nevertheless, the same script can be used to compile this information. I estimate that it would take me about a day per variable.
+
+## Link to GitHub
+
+The files can be accessed here as:
+
+    - *.csv (This file is over 180 MB, and is not available in the repository)
+    - [*.RData]()
+    - [*.mat]()
+
+## Spatial distribution
+
+Hover over a point to see more information about the station.
+
+```{r}
+
+temp2 <- group_by(temp, station) %>%
+  summarize(latitude = mean(latitude, na.rm = T),
+            longitude = mean(longitude, na.rm = T),
+            maxYear = max(year),
+            minYear =min(year),
+            Records = n())
+
+ggplotly(ggplot(data = oax, aes(x = long, y = lat)) +
+  geom_polygon(alpha = 0.5, col = "black") +
+  geom_point(data = temp2, aes(x = longitude, y = latitude, minYear = minYear, maxYear = maxYear, Records = Records)) +
+  theme_bw())
+
+```
+
+
+## Summary of data
+
+Here, Records indicates the number of records per station. minYear and maxYear indicate first and last dates where data was recorded.
+
+```{r}
+
+datatable(temp2, rownames = F)
+
+```
+
+
+# Other leaf rust data (deliverable 4)
+
+## Source
+
+## % of advance
+
+Not working on this now.
+
+## Link to GitHub
+
+## Spatial Distribution
+
+## Summary of data
+
