@@ -67,8 +67,13 @@ About 75 percent of the data has been downloaded. All downloaded data has been c
 
 The files can be accessed here as:
 
-    - [*.csv]()
-    - [*.RData]()
+- [*.csv](https://github.com/jcvdav/OaxacaLeafRust/blob/master/Data/inifap_data.csv)
+
+- [*.RData](https://github.com/jcvdav/OaxacaLeafRust/blob/master/Data/inifap_data.RData)
+
+## Metadata
+
+Nombre indicates the name of the station. Municipality indicates the municipality where the station is. Latitud and Longitud are in decimal degrees. Fecha indicates the date, Prec = precipitation, Tmax = max temperature, Tmin = min temperature, Tmed = mean temperature, VVMax = max wind speed, DVVMax = Direction of max wind speed, VV = Wind speed, DV = Wind direction, RadG = Global radiation, HR = Relative humidity, ET = evapotranspiration, EP = **need to check INIFAP's page, I don't remember**.
 
 ## Spatial distribution of data
 
@@ -100,7 +105,16 @@ datatable(data2, rownames = F)
 
 # Leaf rust data (deliverable 2)
 
+```{r}
+
+load("./Data/royacafe_data.csv")
+
+```
+
+
 ## Source
+
+This data comes from weekly reports from royacafe. The parent directory for all the reports is available [here](http://royacafe.lanref.org.mx/ReportesSPEyC_doc/).
 
 ## % of advance
 
@@ -110,12 +124,27 @@ All available data from the weekly reports has been downloaded and formated. Add
 
 The files can be accessed here as:
 
-    - [*.csv]()
-    - [*.RData]()
+- [*.csv](https://github.com/jcvdav/OaxacaLeafRust/blob/master/Data/royacafe_data.csv)
+
+- [*.RData](https://github.com/jcvdav/OaxacaLeafRust/blob/master/Data/royacafe_data.RData)
+    
+## Metadata
+
+Municipio states the municipality from where data ispresented. Initial and Final indicate the interval for the week that is being reported. PS = Plant severity, PVI = Plant variability index, LS = Leaf severity, LVI = Leaf variability index, AL = Affected leaves per plant, Lechoso, Consistente, and Maduro contain the mean number of fruits on each stage.
+
+INIFAP has a page where they describe the methodology. I will include it here as soon as their page is fixed.
+
 
 ## Spatial distribution
 
 ## Summary of data
+
+```{r}
+
+datatable(royacafe_data)
+
+```
+
 
 # Other climate data (deliverable 3)
 
@@ -137,9 +166,13 @@ All available information for mean temperature has been downloaded. Information 
 
 The files can be accessed here as:
 
-    - *.csv (This file is over 180 MB, and is not available in the repository)
-    - [*.RData]()
-    - [*.mat]()
+- [*.RData](https://github.com/jcvdav/OaxacaLeafRust/blob/master/Data/meanT.RData)
+
+-[*.mat](https://github.com/jcvdav/OaxacaLeafRust/blob/master/Data/meanT.mat)
+
+## Metadata
+
+TBD
 
 ## Spatial distribution
 
@@ -182,6 +215,8 @@ datatable(temp2, rownames = F)
 Not working on this now.
 
 ## Link to GitHub
+
+## Metadata
 
 ## Spatial Distribution
 
