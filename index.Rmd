@@ -107,7 +107,7 @@ datatable(data2, rownames = F)
 
 ```{r}
 
-load("./Data/royacafe_data.csv")
+load("./Data/royacafe_data.RData")
 
 ```
 
