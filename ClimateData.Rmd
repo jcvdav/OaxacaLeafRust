@@ -1,0 +1,79 @@
+---
+title: "Climatie Data"
+author: "Villasenor-Derbez, J.C."
+date: "21 de octubre de 2016"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, messages = F)
+
+suppressPackageStartupMessages({
+  library(tidyverse)
+})
+```
+
+```{r load data}
+
+load("./Data/inifap_data.RData")
+load("./Data/royacafe_data.RData")
+
+```
+
+## Start and end dates by station
+
+```{r, fig.height=8}
+
+group_by(inifap_data, Name, Latitude1, Longitude1) %>%
+  summarize(Records = n(),
+            Init = min(Date),
+            Last = max(Date)) %>%
+  select(Name, Latitude1, Longitude1, Records, Init, Last) %>%
+  gather(Period, Date, -c(1:4)) %>%
+  ggplot(aes(x = Date, y = Name)) +
+  geom_point(aes(color = Period)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Date", y = "Station")
+
+```
+
+## Frequency of start and end dates
+
+```{r}
+
+group_by(inifap_data, Name, Latitude1, Longitude1) %>%
+  summarize(Records = n(),
+            Init = min(Date),
+            Last = max(Date)) %>%
+  select(Name, Latitude1, Longitude1, Records, Init, Last) %>%
+  gather(Period, Date, -c(1:4)) %>%
+  ggplot(aes(x = Date, fill = Period)) +
+  geom_histogram() +
+  facet_grid(Period~.) +
+  labs(x = "Date", y = "Number of stations") +
+  theme_bw() +
+  scale_fill_brewer(palette = "Set1")
+
+```
+
+## Leaf rust and climate matches
+
+### Municipalities with leaf rust
+
+```{r}
+knitr::kable(data.frame(Municipality = sort(unique(royacafe_data$Municipality))))
+```
+
+### Municipalities with climate data
+
+```{r}
+knitr::kable(data.frame(Municipality = sort(unique(inifap_data$Municipality))))
+```
+
+
