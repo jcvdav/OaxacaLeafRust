@@ -53,7 +53,7 @@ The databases have been stored in an online **private repository** in GitHub. Th
 load("./Data/inifap_data.RData")
 ```
 
-This contains daily data for climatic variables. So far, there are a total of `r length(unique(inifap_data$Nombre))` stations with data that covers some point between `r max(inifap_data$Fecha)` and `r max(inifap_data$Fecha)`.
+This contains daily data for climatic variables. So far, there are a total of `r length(unique(inifap_data$Name))` stations with data that covers some point between `r max(inifap_data$Date)` and `r max(inifap_data$Date)`.
 
 ## Source
 
@@ -73,7 +73,7 @@ The files can be accessed here as:
 
 ## Metadata
 
-Nombre indicates the name of the station. Municipality indicates the municipality where the station is. Latitud and Longitud are in decimal degrees. Fecha indicates the date, Prec = precipitation, Tmax = max temperature, Tmin = min temperature, Tmed = mean temperature, VVMax = max wind speed, DVVMax = Direction of max wind speed, VV = Wind speed, DV = Wind direction, RadG = Global radiation, HR = Relative humidity, ET = evapotranspiration, EP = **need to check INIFAP's page, I don't remember**.
+Nombre indicates the name of the station. Municipality indicates the municipality where the station is. Latitud and Longitud are in decimal degrees. Fecha indicates the date, Prec = precipitation, Tmax = max temperature, Tmin = min temperature, Tmed = mean temperature, VVMax = max wind speed, DVVMax = Direction of max wind speed, VV = Wind speed, DV = Wind direction, RadG = Global radiation, HR = Relative humidity, ET = evapotranspiration, EP = Potential evapotranspiration.
 
 ## Spatial distribution of data
 
@@ -81,14 +81,14 @@ Hover over a point to see more information about the station.
 
 ```{r}
 
-data2 <- group_by(inifap_data, Nombre, Latitud, Longitud) %>%
+data2 <- group_by(inifap_data, Name, Latitude1, Longitude1) %>%
   summarize(Records = n(),
-            Init = min(Fecha),
-            Last = max(Fecha))
+            Init = min(Date),
+            Last = max(Date))
 
-ggplotly(ggplot(data = oax, aes(x = long, y = lat)) +
+ggplotly(ggplot(data = oax, aes(x = -long, y = lat)) +
   geom_polygon(alpha = 0.5, col = "black") +
-  geom_point(data = data2, aes(x = Longitud, y = Latitud, Init = Init, Last = Last, Records = Records)) +
+  geom_point(data = data2, aes(x = Longitude1, y = Latitude1, Init = Init, Last = Last, Records = Records)) +
   theme_bw())
 
 ```
