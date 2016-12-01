@@ -18,11 +18,30 @@ suppressPackageStartupMessages({
   library(sp)
   library(dplyr)
   library(tidyr)
+  library(raster)
 })
 
 ```
 
 ```{r load spatial}
+
+load("./Data/meanT.RData")
+temp <- group_by(temp, station) %>%
+  summarize(latitude = mean(latitude, na.rm = T),
+            longitude = mean(longitude, na.rm = T),
+            maxYear = max(year),
+            minYear =min(year))
+load("./Data/royacafe_data.RData")
+
+mun_ids <- read.csv("./Data/mun_ids.csv")
+
+clr <- royacafe_data %>%
+  group_by(Municipality) %>%
+  summarize(Nobs = n()) %>%
+  mutate(Municipality = as.character(Municipality)) %>%
+  rename(NOM_MUN = Municipality) %>%
+  left_join(mun_ids, by = "NOM_MUN")
+
 
 dir = "./Data/Spatial"
 
@@ -30,30 +49,39 @@ stat <- readOGR(dsn = dir, layer = "states")
 stat <- stat[stat$NAME == "Oaxaca",]
 
 muni <- readOGR(dsn = dir, layer = "Municipios__2000")
-muni <- muni[muni$NOM_ENT == "Oaxaca",]
+muni <- muni[muni$NOM_ENT == "Oaxaca", c(10,11)]
+
+muni@data <- muni@data %>%
+  mutate(MUN = as.integer(as.character(MUN))) %>%
+  left_join(clr, by = "MUN")
+
+muni.data <- muni@data
   
 
-load("./Data/meanT.RData")
+oax <- merge(fortify(stat), stat@data, by = intersect(names(fortify(stat)), names(stat@data)))
 
-oax <- merge(fortify(stat), stat@data, by = intersect(names(stat), names(stat@data)))
+oax_muni <- merge(fortify(muni), muni.data, by = intersect(names(fortify(muni)), names(muni.data)))
 
-oax_muni <- merge(fortify(muni), muni@data, by = intersect(names(muni), names(muni@data)))
-
-temp <- group_by(temp, station) %>%
-  summarize(latitude = mean(latitude, na.rm = T),
-            longitude = mean(longitude, na.rm = T),
-            maxYear = max(year),
-            minYear =min(year))
 
 ```
 
 ```{r}
 
 ggplot(data = oax, aes(x = long, y = lat)) +
-  geom_polygon(aes(fill = NAME), alpha = 0.5, col = "black                                         ") +
+  geom_polygon(aes(fill = NAME), alpha = 0.5, col = "black") +
   geom_point(data = temp, aes(x = longitude, y = latitude)) +
   theme_bw()
 
 ```
 
+```{r}
 
+m = tm_shape(muni) +
+    tm_polygons('Nobs', palette='RdYlGn', id='name', title='Number of observations (weeks)', auto.palette.mapping=F) +
+    tm_style_gray() + tm_format_World()
+
+m
+
+tmap_leaflet(m)
+
+```
