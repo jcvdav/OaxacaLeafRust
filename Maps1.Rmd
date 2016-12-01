@@ -2,38 +2,34 @@
 title: "Maps1"
 author: "Villasenor-Derbez, J.C."
 date: "12 de octubre de 2016"
-output: html_document
+output:
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(echo = F, message = F, warning = F)
 ```
 
 ```{r load packages}
 
 suppressPackageStartupMessages({
   library(rgdal)
-  library(ggplot2)
   library(maptools)
   library(sp)
-  library(dplyr)
-  library(tidyr)
   library(raster)
+  library(sp)
+  library(tmap)
+  library(plotly)
+  library(tidyverse)
 })
 
 ```
 
 ```{r load spatial}
 
-load("./Data/meanT.RData")
-temp <- group_by(temp, station) %>%
-  summarize(latitude = mean(latitude, na.rm = T),
-            longitude = mean(longitude, na.rm = T),
-            maxYear = max(year),
-            minYear =min(year))
-load("./Data/royacafe_data.RData")
-
 mun_ids <- read.csv("./Data/mun_ids.csv")
+
+load("./Data/royacafe_data.RData")
 
 clr <- royacafe_data %>%
   group_by(Municipality) %>%
@@ -46,42 +42,106 @@ clr <- royacafe_data %>%
 dir = "./Data/Spatial"
 
 stat <- readOGR(dsn = dir, layer = "states")
-stat <- stat[stat$NAME == "Oaxaca",]
+#stat <- stat[stat$NAME == "Oaxaca",]
+proj <- CRS("+proj=lcc +lat_1=17.5 +lat_2=29.5 +lat_0=0 +lon_0=-102 +x_0=2000000 +y_0=0 +datum=NAD27 +units=m +no_defs +ellps=clrk66 +nadgrids=@conus,@alaska,@ntv2_0.gsb,@ntv1_can.dat")
 
-muni <- readOGR(dsn = dir, layer = "Municipios__2000")
+proj2 <- CRS("+proj=longlat +datum=NAD27")
+
+#muni <- readOGR(dsn = dir, layer = "Municipios__2000")
+
+muni <- readShapePoly(fn = file.path(dir, "Municipios__2000"), proj4string = proj)
 muni <- muni[muni$NOM_ENT == "Oaxaca", c(10,11)]
+muni <- spTransform(muni, CRS("+proj=longlat +datum=NAD27"))
+
 
 muni@data <- muni@data %>%
   mutate(MUN = as.integer(as.character(MUN))) %>%
   left_join(clr, by = "MUN")
 
-muni.data <- muni@data
-  
+## Temperature data
+load("./Data/inifap_data.RData")
 
-oax <- merge(fortify(stat), stat@data, by = intersect(names(fortify(stat)), names(stat@data)))
+temp <- inifap_data %>%
+  group_by(Name, Municipality) %>%
+  summarize(latitude = mean(Latitude1, na.rm = T),
+            longitude = mean(Longitude1, na.rm = T),
+            maxYear = max(Date),
+            minYear =min(Date)) %>%
+  ungroup()
 
-oax_muni <- merge(fortify(muni), muni.data, by = intersect(names(fortify(muni)), names(muni.data)))
+xy <- data.frame(X = -1*temp$longitude, Y = temp$latitude)
+coordinates(xy) <- c("X", "Y")
+proj4string(xy) <- proj2  ## for example
+res <- spTransform(xy, proj2)
+b <- SpatialPointsDataFrame(coords = res, data = temp, proj4string = proj2)
+
+
+#oax <- merge(fortify(stat), stat@data, by = intersect(names(fortify(stat)), names(stat@data)))
+
+#oax_muni <- merge(fortify(muni), muni.data, by = intersect(names(fortify(muni)), names(muni.data)))
 
 
 ```
 
+## Station Data
+
+```{r, fig.cap="Initial and final times of sampling for each station. These window of meassurements may be interrupted at different points for different stations.", fig.height = 7}
+ggplotly(group_by(inifap_data, Name, Latitude1, Longitude1) %>%
+           summarize(Records = n(),
+                     Init = min(Date),
+                     Last = max(Date)) %>%
+           dplyr::select(Name, Latitude1, Longitude1, Records, Init, Last) %>%
+           gather(Period, Date, -c(1:4)) %>%
+           ggplot(aes(x = Date, y = Name)) +
+           geom_point(aes(color = Period)) +
+           geom_line() +
+           theme_bw() +
+           scale_color_brewer(palette = "Set1") +
+           labs(x = "Date", y = "Station"))
+
+```
+
+## Coffee Leaf Rust Data
+
+```{r, fig.cap="Initial and final times of coffee leaf rust data. These window of meassurements may be interrupted at different points for different stations."}
+ggplotly(royacafe_data %>%
+           mutate(Initial = as.Date(Initial, format = c("%d/%m/%Y")),
+                  Final = as.Date(Final, format = c("%d/%m/%Y"))) %>%
+           group_by(Municipality) %>%
+           summarize(Records = n(),
+                     Init = min(Initial),
+                     Last = max(Final)) %>%
+           gather(Period, Date, -c(1:2)) %>%
+           ggplot(aes(x = Date, y = Municipality)) +
+           geom_point(aes(color = Period)) +
+           geom_line() +
+           theme_bw() +
+           scale_color_brewer(palette = "Set1") +
+           labs(x = "Date", y = "Station"))
+
+```
+
+## Map of both
+
+```{r, fig.cap="Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality. Red dots indicate weather stations."}
+
+tm_shape(muni, is.master = TRUE) +
+  tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F) +
+  tm_style_gray() +
+  tm_format_World() +
+  tm_shape(b) +
+  tm_dots(col = "red", size = 1, border.col = "black") +
+  tm_layout(legend.position = c("RIGHT", "TOP"))
+
+```
 ```{r}
-
-ggplot(data = oax, aes(x = long, y = lat)) +
-  geom_polygon(aes(fill = NAME), alpha = 0.5, col = "black") +
-  geom_point(data = temp, aes(x = longitude, y = latitude)) +
-  theme_bw()
-
-```
-
-```{r}
-
-m = tm_shape(muni) +
-    tm_polygons('Nobs', palette='RdYlGn', id='name', title='Number of observations (weeks)', auto.palette.mapping=F) +
-    tm_style_gray() + tm_format_World()
-
-m
-
-tmap_leaflet(m)
+tmap_leaflet(tm_shape(muni, is.master = TRUE) +
+               tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F) +
+               tm_style_gray() +
+               tm_format_World() +
+               tm_shape(b) +
+               tm_dots(col = "red", size = 0.5, border.col = "black") +
+               tm_layout(legend.position = c("RIGHT", "TOP")))
 
 ```
+
