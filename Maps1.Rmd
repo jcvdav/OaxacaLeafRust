@@ -3,7 +3,8 @@ title: "Maps1"
 author: "Villasenor-Derbez, J.C."
 date: "12 de octubre de 2016"
 output:
-  html_document: default
+  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -25,7 +26,7 @@ suppressPackageStartupMessages({
 
 ```
 
-```{r load spatial}
+```{r load data}
 
 mun_ids <- read.csv("./Data/mun_ids.csv")
 
@@ -58,7 +59,8 @@ muni@data <- muni@data %>%
   mutate(MUN = as.integer(as.character(MUN))) %>%
   left_join(clr, by = "MUN")
 
-## Temperature data
+
+## Temperature data from inifap
 load("./Data/inifap_data.RData")
 
 temp <- inifap_data %>%
@@ -75,6 +77,9 @@ proj4string(xy) <- proj2  ## for example
 res <- spTransform(xy, proj2)
 b <- SpatialPointsDataFrame(coords = res, data = temp, proj4string = proj2)
 
+## Temperature data from CliCom
+#load("./Data/")
+
 
 #oax <- merge(fortify(stat), stat@data, by = intersect(names(fortify(stat)), names(stat@data)))
 
@@ -83,58 +88,136 @@ b <- SpatialPointsDataFrame(coords = res, data = temp, proj4string = proj2)
 
 ```
 
-## Station Data
+## Introduction
 
-```{r, fig.cap="Initial and final times of sampling for each station. These window of meassurements may be interrupted at different points for different stations.", fig.height = 7}
-ggplotly(group_by(inifap_data, Name, Latitude1, Longitude1) %>%
-           summarize(Records = n(),
-                     Init = min(Date),
-                     Last = max(Date)) %>%
-           dplyr::select(Name, Latitude1, Longitude1, Records, Init, Last) %>%
-           gather(Period, Date, -c(1:4)) %>%
-           ggplot(aes(x = Date, y = Name)) +
-           geom_point(aes(color = Period)) +
-           geom_line() +
-           theme_bw() +
-           scale_color_brewer(palette = "Set1") +
-           labs(x = "Date", y = "Station"))
+
+
+## Deliverable 1 - Climate data
+
+This contains daily data for climatic variables collected from weather stations at 2 m above the ground. Data comes from INIFAP's [website](http://clima.inifap.gob.mx/redinifap/est.aspx?est=38213), where one can search by state, station, year, and month. This same portal has station data available for all other states, including Chiapas, Veracruz, and Guerrero, states that also produce coffee. Data were obtained by copy-pasting directly from the tables displayed in each query for the state of Oaxaca and every station listed under it. There are a total of `r length(unique(inifap_data$Name))` stations with data that covers some point between `r min(inifap_data$Date)` and `r max(inifap_data$Date)` (Fig. 1). Within that window, some stations may have gaps of missing data.  The compiled database can be downloaded from github in [*.csv format](https://github.com/jcvdav/OaxacaLeafRust/blob/master/Data/inifap_data.csv) or in [*.RData format](https://github.com/jcvdav/OaxacaLeafRust/blob/master/Data/inifap_data.Rdata). This data has the following fields:
+
+  - *Name*: the name of the station
+  
+  - *Municipality*: the municipality where the station is
+  
+  - *Latitud1*: Latitude in decimal degrees
+  
+  - *Longitude1*: Longitude  in decimal degrees
+  
+  - *Latitude2*: Latitude in DMS format
+  
+  - *Longitude2*: Latitude in DMS format
+  
+  - *Date*: Date in dd//mm/yy format (\*.csv) and YYYY/mm/dd (\*.Rdata)
+  
+  - *Preci*: Precipitation in mm
+  
+  - *Tmax*: Maximum daily temperature in °C
+  
+  - *Tmin*: Minimum daily temperature in °C
+  
+  - *Tmed*: Mean daily temperature in °C
+  
+  - *VVMax*: Maximum wind speed in km/h
+  
+  - *DVVMax*: Direction of the maximum wind speed in azimuth
+  
+  - *VV*: Mean wind speed in km/h
+  
+  - *DV*: Mean direction of wind speed in azimuth
+  
+  - *RadG*: Global radiation in w / m^2
+  
+  - *HR*: Relative humidity (%)
+  
+  - *ET*: Reference evapotranspiration (mm)
+  
+  - *EP*: Potential evapotranspiration (mm)
+
+
+```{r, fig.cap="**Figure 1 - **Initial and final times of sampling for each station. These window of meassurements may be interrupted at different points for different stations.", fig.height = 7}
+group_by(inifap_data, Name, Latitude1, Longitude1) %>%
+  summarize(Records = n(),
+            Init = min(Date),
+            Last = max(Date)) %>%
+  dplyr::select(Name, Latitude1, Longitude1, Records, Init, Last) %>%
+  gather(Period, Date, -c(1:4)) %>%
+  ggplot(aes(x = Date, y = Name)) +
+  geom_point(aes(color = Period)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Date", y = "Station")
 
 ```
 
-## Coffee Leaf Rust Data
+## Deliverable 2 - Coffee leaf rust data
 
-```{r, fig.cap="Initial and final times of coffee leaf rust data. These window of meassurements may be interrupted at different points for different stations."}
-ggplotly(royacafe_data %>%
-           mutate(Initial = as.Date(Initial, format = c("%d/%m/%Y")),
-                  Final = as.Date(Final, format = c("%d/%m/%Y"))) %>%
-           group_by(Municipality) %>%
-           summarize(Records = n(),
-                     Init = min(Initial),
-                     Last = max(Final)) %>%
-           gather(Period, Date, -c(1:2)) %>%
-           ggplot(aes(x = Date, y = Municipality)) +
-           geom_point(aes(color = Period)) +
-           geom_line() +
-           theme_bw() +
-           scale_color_brewer(palette = "Set1") +
-           labs(x = "Date", y = "Station"))
+Coffee leaf rust data weekly reports from royacafe. The parent directory for all the reports is available [here](http://royacafe.lanref.org.mx/ReportesSPEyC_doc/). The weekley reports include information for coffee leaf rsut incidence. The data is reported at municipality level, and no specific coordinates or information about the number of coffee plots is provided by the source. This dataset contains information for a total of `r length(unique(muni@data$NOM_MUN.y))` municipalities, with information from `r min(as.Date(royacafe_data$Initial, format = c("%d/%m/%Y")))` to `r max(as.Date(royacafe_data$Final, format = c("%d/%m/%Y")))` (Fig. 2). There are three main clusters of coffee leaf rust information. One of them is located in the Northernmost part of the state. For that region, there are between 1 and 5 weekly reports for each of the 4 municipalities. The second cluster is in the Eastern region of the state, where 3 municipalities have 1 observation each. The third cluster is located in the South of the state. This cluster has 6 municipalities, with between 6 and 28 observations.
+
+This dataset contains information for:
+
+  - *Municipality*
+  
+  - *Initial*
+  
+  - *Final*
+  
+  - *PS*
+  
+  - *PVI*
+  
+  - *LS*
+  
+  - *LVI*
+  
+  - *AL*
+  
+  - *Lechoso*
+  
+  - *Consistente*
+  
+  - *Maduro*
+
+**Note:** While these are called weekly reports, there are not 52 reports per year. Apparently, this makes reference to the fact that the sampling periof for each report is often a week.
+
+
+
+```{r, fig.cap="**Figure 2 -** Initial and final times of coffee leaf rust data. These window of meassurements may be interrupted at different points for different stations."}
+royacafe_data %>%
+  mutate(Initial = as.Date(Initial, format = c("%d/%m/%Y")),
+         Final = as.Date(Final, format = c("%d/%m/%Y"))) %>%
+  group_by(Municipality) %>%
+  summarize(Records = n(),
+            Init = min(Initial),
+            Last = max(Final)) %>%
+  gather(Period, Date, -c(1:2)) %>%
+  ggplot(aes(x = Date, y = Municipality)) +
+  geom_point(aes(color = Period)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Date", y = "Station")
 
 ```
 
-## Map of both
+## Spatial distribution of data
 
-```{r, fig.cap="Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality. Red dots indicate weather stations."}
+
+
+```{r, fig.cap="**Figure 3 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available."}
 
 tm_shape(muni, is.master = TRUE) +
-  tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F) +
+  tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F, text = "NOM_MUN.x") +
+  tm_text("Nobs", size = 0.5) +
   tm_style_gray() +
-  tm_format_World() +
   tm_shape(b) +
-  tm_dots(col = "red", size = 1, border.col = "black") +
+  tm_dots(col = "red", size = 0.5, border.col = "black") +
   tm_layout(legend.position = c("RIGHT", "TOP"))
 
 ```
-```{r}
+
+```{r, eval = F}
 tmap_leaflet(tm_shape(muni, is.master = TRUE) +
                tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F) +
                tm_style_gray() +
