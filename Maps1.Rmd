@@ -3,7 +3,6 @@ title: "Maps1"
 author: "Villasenor-Derbez, J.C."
 date: "12 de octubre de 2016"
 output:
-  pdf_document: default
   word_document: default
 ---
 
@@ -78,12 +77,22 @@ res <- spTransform(xy, proj2)
 b <- SpatialPointsDataFrame(coords = res, data = temp, proj4string = proj2)
 
 ## Temperature data from CliCom
-#load("./Data/")
+load("./Data/clicom_data.RData")
 
+temp2 <- clicom_data %>%
+  mutate(date = as.Date(datenum, origin = "1970-01-01")-719529) %>%
+  group_by(id, station) %>%
+  summarize(latitude = mean(latitude, na.rm = T),
+            longitude = mean(longitude, na.rm = T),
+            maxYear = max(date),
+            minYear =min(date)) %>%
+  ungroup()
 
-#oax <- merge(fortify(stat), stat@data, by = intersect(names(fortify(stat)), names(stat@data)))
-
-#oax_muni <- merge(fortify(muni), muni.data, by = intersect(names(fortify(muni)), names(muni.data)))
+xy <- data.frame(X = temp2$longitude, Y = temp2$latitude)
+coordinates(xy) <- c("X", "Y")
+proj4string(xy) <- proj2  ## for example
+res2 <- spTransform(xy, proj2)
+c <- SpatialPointsDataFrame(coords = res2, data = temp2, proj4string = proj2)
 
 
 ```
@@ -135,7 +144,7 @@ This contains daily data for climatic variables collected from weather stations 
   - *EP*: Potential evapotranspiration (mm)
 
 
-```{r, fig.cap="**Figure 1 - **Initial and final times of sampling for each station. These window of meassurements may be interrupted at different points for different stations.", fig.height = 7}
+```{r, fig.cap="**Figure 1 - **Initial and final times of sampling for each station. These window of meassurements may be interrupted at different points for different stations.", fig.height = 7, fig.width=10}
 group_by(inifap_data, Name, Latitude1, Longitude1) %>%
   summarize(Records = n(),
             Init = min(Date),
@@ -150,6 +159,7 @@ group_by(inifap_data, Name, Latitude1, Longitude1) %>%
   labs(x = "Date", y = "Station")
 
 ```
+
 
 ## Deliverable 2 - Coffee leaf rust data
 
@@ -203,16 +213,49 @@ royacafe_data %>%
 
 ## Spatial distribution of data
 
-
-
-```{r, fig.cap="**Figure 3 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available."}
+```{r, fig.cap="**Figure 3 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available from INIFAP's database."}
 
 tm_shape(muni, is.master = TRUE) +
-  tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F, text = "NOM_MUN.x") +
+  tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F, text = "No CLR data") +
   tm_text("Nobs", size = 0.5) +
   tm_style_gray() +
   tm_shape(b) +
-  tm_dots(col = "red", size = 0.5, border.col = "black") +
+  tm_bubbles(col = "red", size = 0.25, border.col = "black") +
+  tm_layout(legend.position = c("RIGHT", "TOP"))
+
+```
+
+## Other climate data
+
+This data comes from [CLICOM's database](clicom-mex.cicese.mx). The portal allows the suer to download sets of 20 files (stations) at a time, either in \*.csv or \*.mat formats. This contains daily data for climatic variables. There are a total of `r length(unique(clicom_data$station))` stations with data that covers some point between 2000 and `r max(clicom_data$year)`. The oldest station has data from as far back as `r min(clicom_data$year)`. While this data has a better spatial distribution (Fig. 5), information for recent years is not available.
+
+
+```{r, fig.cap="**Figure 4 - **Initial and final times of sampling for each station. This represents a subser of all stations to reduce the size of the graph. This subset represents stations with more than 30 years of data, from 2010 back. These window of meassurements may be interrupted at different points for different stations.", fig.height = 14, fig.width=11}
+group_by(clicom_data, station, latitude, longitude) %>%
+  summarize(Records = n(),
+            Init = min(as.Date(datenum, origin = "1970-01-01")-719529),
+            Last = max(as.Date(datenum, origin = "1970-01-01")-719529)) %>%
+  filter(Last > as.Date("2010-01-01")) %>%
+  filter(Init < as.Date("1980-01-01")) %>%
+  dplyr::select(station, latitude, longitude, Records, Init, Last) %>%
+  gather(Period, Date, -c(1:4)) %>%
+  ggplot(aes(x = Date, y = station)) +
+  geom_point(aes(color = Period)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Date", y = "Station")
+
+```
+
+```{r, fig.cap="**Figure 5 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available up to 2012 from CLICOM's database."}
+
+tm_shape(muni, is.master = TRUE) +
+  tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F, text = "No CLR data") +
+  tm_text("Nobs", size = 0.5) +
+  tm_style_gray() +
+  tm_shape(c) +
+  tm_bubbles(col = "red", size = 0.25, border.col = "black") +
   tm_layout(legend.position = c("RIGHT", "TOP"))
 
 ```
@@ -223,8 +266,11 @@ tmap_leaflet(tm_shape(muni, is.master = TRUE) +
                tm_style_gray() +
                tm_format_World() +
                tm_shape(b) +
-               tm_dots(col = "red", size = 0.5, border.col = "black") +
+               tm_bubbles(col = "red", size = 0.25, border.col = "black") +
+               tm_shape(c) +
+               tm_bubbles(col = "blue", size = 0.25, border.col = "black")+
                tm_layout(legend.position = c("RIGHT", "TOP")))
 
 ```
+
 
