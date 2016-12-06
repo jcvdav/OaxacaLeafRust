@@ -1,9 +1,9 @@
 ---
-title: "Maps1"
-author: "Villasenor-Derbez, J.C."
-date: "12 de octubre de 2016"
+title: "Deliverable 4"
+subtitle: Temporal and spatial distribution of the data
 output:
   word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -41,7 +41,7 @@ clr <- royacafe_data %>%
 
 dir = "./Data/Spatial"
 
-stat <- readOGR(dsn = dir, layer = "states")
+stat <- readOGR(dsn = dir, layer = "states", verbose = F)
 #stat <- stat[stat$NAME == "Oaxaca",]
 proj <- CRS("+proj=lcc +lat_1=17.5 +lat_2=29.5 +lat_0=0 +lon_0=-102 +x_0=2000000 +y_0=0 +datum=NAD27 +units=m +no_defs +ellps=clrk66 +nadgrids=@conus,@alaska,@ntv2_0.gsb,@ntv1_can.dat")
 
@@ -97,8 +97,19 @@ c <- SpatialPointsDataFrame(coords = res2, data = temp2, proj4string = proj2)
 
 ```
 
-## Introduction
+# Introduction
 
+## Literature review
+
+## Summary of work
+
+## Summary of findings
+
+## Recommendations
+
+\clearpage
+
+# Deliverables
 
 
 ## Deliverable 1 - Climate data
@@ -142,25 +153,7 @@ This contains daily data for climatic variables collected from weather stations 
   - *ET*: Reference evapotranspiration (mm)
   
   - *EP*: Potential evapotranspiration (mm)
-
-
-```{r, fig.cap="**Figure 1 - **Initial and final times of sampling for each station. These window of meassurements may be interrupted at different points for different stations.", fig.height = 7, fig.width=10}
-group_by(inifap_data, Name, Latitude1, Longitude1) %>%
-  summarize(Records = n(),
-            Init = min(Date),
-            Last = max(Date)) %>%
-  dplyr::select(Name, Latitude1, Longitude1, Records, Init, Last) %>%
-  gather(Period, Date, -c(1:4)) %>%
-  ggplot(aes(x = Date, y = Name)) +
-  geom_point(aes(color = Period)) +
-  geom_line() +
-  theme_bw() +
-  scale_color_brewer(palette = "Set1") +
-  labs(x = "Date", y = "Station")
-
-```
-
-
+  
 ## Deliverable 2 - Coffee leaf rust data
 
 Coffee leaf rust data weekly reports from royacafe. The parent directory for all the reports is available [here](http://royacafe.lanref.org.mx/ReportesSPEyC_doc/). The weekley reports include information for coffee leaf rsut incidence. The data is reported at municipality level, and no specific coordinates or information about the number of coffee plots is provided by the source. This dataset contains information for a total of `r length(unique(muni@data$NOM_MUN.y))` municipalities, with information from `r min(as.Date(royacafe_data$Initial, format = c("%d/%m/%Y")))` to `r max(as.Date(royacafe_data$Final, format = c("%d/%m/%Y")))` (Fig. 2). There are three main clusters of coffee leaf rust information. One of them is located in the Northernmost part of the state. For that region, there are between 1 and 5 weekly reports for each of the 4 municipalities. The second cluster is in the Eastern region of the state, where 3 municipalities have 1 observation each. The third cluster is located in the South of the state. This cluster has 6 municipalities, with between 6 and 28 observations.
@@ -191,9 +184,33 @@ This dataset contains information for:
 
 **Note:** While these are called weekly reports, there are not 52 reports per year. Apparently, this makes reference to the fact that the sampling periof for each report is often a week.
 
+## Deliverable 3 - Other climate data
 
+This data comes from [CLICOM's database](clicom-mex.cicese.mx). The portal allows the suer to download sets of 20 files (stations) at a time, either in \*.csv or \*.mat formats. This contains daily data for climatic variables. There are a total of `r length(unique(clicom_data$station))` stations with data that covers some point between 2000 and `r max(clicom_data$year)`. The oldest station has data from as far back as `r min(clicom_data$year)`. While this data has a better spatial distribution (Fig. 5), information for recent years is not available.
 
-```{r, fig.cap="**Figure 2 -** Initial and final times of coffee leaf rust data. These window of meassurements may be interrupted at different points for different stations."}
+\clearpage
+
+## Figures
+
+```{r, fig.cap="**Figure 1 - **Initial and final times of sampling for each station. These window of meassurements may be interrupted at different points for different stations.", fig.height = 7, fig.width=10}
+group_by(inifap_data, Name, Latitude1, Longitude1) %>%
+  summarize(Records = n(),
+            Init = min(Date),
+            Last = max(Date)) %>%
+  dplyr::select(Name, Latitude1, Longitude1, Records, Init, Last) %>%
+  gather(Period, Date, -c(1:4)) %>%
+  ggplot(aes(x = Date, y = Name)) +
+  geom_point(aes(color = Period)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "Date", y = "Station")
+
+```
+
+\clearpage
+
+```{r, fig.cap="**Figure 2 -** Initial and final times of coffee leaf rust data. These window of meassurements may be interrupted at different points for different stations.", fig.width=10}
 royacafe_data %>%
   mutate(Initial = as.Date(Initial, format = c("%d/%m/%Y")),
          Final = as.Date(Final, format = c("%d/%m/%Y"))) %>%
@@ -211,9 +228,11 @@ royacafe_data %>%
 
 ```
 
+\clearpage
+
 ## Spatial distribution of data
 
-```{r, fig.cap="**Figure 3 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available from INIFAP's database."}
+```{r, fig.cap="**Figure 3 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available from INIFAP's database.", fig.width = 8}
 
 tm_shape(muni, is.master = TRUE) +
   tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F, text = "No CLR data") +
@@ -225,10 +244,7 @@ tm_shape(muni, is.master = TRUE) +
 
 ```
 
-## Other climate data
-
-This data comes from [CLICOM's database](clicom-mex.cicese.mx). The portal allows the suer to download sets of 20 files (stations) at a time, either in \*.csv or \*.mat formats. This contains daily data for climatic variables. There are a total of `r length(unique(clicom_data$station))` stations with data that covers some point between 2000 and `r max(clicom_data$year)`. The oldest station has data from as far back as `r min(clicom_data$year)`. While this data has a better spatial distribution (Fig. 5), information for recent years is not available.
-
+\clearpage
 
 ```{r, fig.cap="**Figure 4 - **Initial and final times of sampling for each station. This represents a subser of all stations to reduce the size of the graph. This subset represents stations with more than 30 years of data, from 2010 back. These window of meassurements may be interrupted at different points for different stations.", fig.height = 14, fig.width=11}
 group_by(clicom_data, station, latitude, longitude) %>%
@@ -248,7 +264,9 @@ group_by(clicom_data, station, latitude, longitude) %>%
 
 ```
 
-```{r, fig.cap="**Figure 5 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available up to 2012 from CLICOM's database."}
+\clearpage
+
+```{r, fig.cap="**Figure 5 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available up to 2012 from CLICOM's database.", fig.width = 8}
 
 tm_shape(muni, is.master = TRUE) +
   tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F, text = "No CLR data") +
@@ -259,18 +277,3 @@ tm_shape(muni, is.master = TRUE) +
   tm_layout(legend.position = c("RIGHT", "TOP"))
 
 ```
-
-```{r, eval = F}
-tmap_leaflet(tm_shape(muni, is.master = TRUE) +
-               tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F) +
-               tm_style_gray() +
-               tm_format_World() +
-               tm_shape(b) +
-               tm_bubbles(col = "red", size = 0.25, border.col = "black") +
-               tm_shape(c) +
-               tm_bubbles(col = "blue", size = 0.25, border.col = "black")+
-               tm_layout(legend.position = c("RIGHT", "TOP")))
-
-```
-
-
