@@ -2,7 +2,6 @@
 title: ""
 subtitle: "Deliverable 4 - Temporal and spatial distribution of the data"
 output:
-  html_document: default
   word_document: default
 ---
 
@@ -246,11 +245,10 @@ This data set contains information for:
 
 ## Figures
 
-All figures are available as interactive figures at []()
+All figures are available as interactive figures at [https://jcvdav.github.io/OaxacaLeafRust/Deliverable4.html](https://jcvdav.github.io/OaxacaLeafRust/Deliverable4.html)
 
 ```{r, fig.cap="**Figure 1 - **Initial and final times of sampling for each station. These window of meassurements may be interrupted at different points for different stations.", fig.height = 7, fig.width=10}
 
-ggplotly(
 group_by(inifap_data, Name, Latitude1, Longitude1) %>%
   summarize(Records = n(),
             Init = min(Date),
@@ -262,7 +260,7 @@ group_by(inifap_data, Name, Latitude1, Longitude1) %>%
   geom_line() +
   theme_bw() +
   scale_color_brewer(palette = "Set1") +
-  labs(x = "Date", y = "Station"))
+  labs(x = "Date", y = "Station")
 
 ```
 
@@ -270,7 +268,7 @@ group_by(inifap_data, Name, Latitude1, Longitude1) %>%
 
 ```{r, fig.cap="**Figure 2 -** Initial and final times of coffee leaf rust data. These window of meassurements may be interrupted at different points for different stations.", fig.width=10}
 
-ggplotly(royacafe_data %>%
+royacafe_data %>%
   mutate(Initial = as.Date(Initial, format = c("%d/%m/%Y")),
          Final = as.Date(Final, format = c("%d/%m/%Y"))) %>%
   group_by(Municipality) %>%
@@ -283,7 +281,7 @@ ggplotly(royacafe_data %>%
   geom_line() +
   theme_bw() +
   scale_color_brewer(palette = "Set1") +
-  labs(x = "Date", y = "Station"))
+  labs(x = "Date", y = "Station")
 
 ```
 
@@ -293,20 +291,20 @@ ggplotly(royacafe_data %>%
 
 ```{r, fig.cap="**Figure 3 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available from INIFAP's database.", fig.width = 8}
 
-tmap_leaflet(tm_shape(muni, is.master = TRUE) +
+tm_shape(muni, is.master = TRUE) +
   tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F, text = "No CLR data") +
   tm_text("Nobs", size = 0.5) +
   tm_style_gray() +
   tm_shape(b) +
   tm_bubbles(col = "red", size = 0.25, border.col = "black") +
-  tm_layout(legend.position = c("RIGHT", "TOP")))
+  tm_layout(legend.position = c("RIGHT", "TOP"))
 
 ```
 
 \clearpage
 
 ```{r, fig.cap="**Figure 4 - **Initial and final times of sampling for each station. This represents a subser of all stations to reduce the size of the graph. This subset represents stations with more than 30 years of data, from 2010 back. These window of meassurements may be interrupted at different points for different stations.", fig.height = 14, fig.width=11}
-ggplotly(group_by(clicom_data, station, latitude, longitude) %>%
+group_by(clicom_data, station, latitude, longitude) %>%
   summarize(Records = n(),
             Init = min(as.Date(datenum, origin = "1970-01-01")-719529),
             Last = max(as.Date(datenum, origin = "1970-01-01")-719529)) %>%
@@ -319,7 +317,7 @@ ggplotly(group_by(clicom_data, station, latitude, longitude) %>%
   geom_line() +
   theme_bw() +
   scale_color_brewer(palette = "Set1") +
-  labs(x = "Date", y = "Station"))
+  labs(x = "Date", y = "Station")
 
 ```
 
@@ -327,12 +325,12 @@ ggplotly(group_by(clicom_data, station, latitude, longitude) %>%
 
 ```{r, fig.cap="**Figure 5 -** Map of Oaxaca and municipalities. Color of municipalities represent the number of weeks (weekly reports) with available information for each municipality, also shown as text over each municipality. Red dots indicate the locations of weather stations from which data is available up to 2012 from CLICOM's database.", fig.width = 8}
 
-tmap_leaflet(tm_shape(muni, is.master = TRUE) +
+tm_shape(muni, is.master = TRUE) +
   tm_polygons('Nobs', title='Weeks with data', auto.palette.mapping=F, text = "No CLR data") +
   tm_text("Nobs", size = 0.5) +
   tm_style_gray() +
   tm_shape(c) +
   tm_bubbles(col = "red", size = 0.25, border.col = "black") +
-  tm_layout(legend.position = c("RIGHT", "TOP")))
+  tm_layout(legend.position = c("RIGHT", "TOP"))
 
 ```
